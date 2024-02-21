@@ -53,7 +53,7 @@ public class GPUGraph : MonoBehaviour
             duration -= functionDuration;
             function = FunctionLibrary.GetNextFunctionName(function);
         }
-        PickNextFunction();
+        //PickNextFunction();
         UpdateFunctionOnGPU();
     }
     void PickNextFunction()
@@ -74,8 +74,7 @@ public class GPUGraph : MonoBehaviour
         }
         computeShader.SetBuffer(0, positionsId, positionsBuffer);
 
-        var kernelIndex =
-            (int)function + (int)(transitioning ? transitionFunction : function) * 5;
+        var kernelIndex = (int)function;
         computeShader.SetBuffer(kernelIndex, positionsId, positionsBuffer);
 
         int groups = Mathf.CeilToInt(resolution / 8f);

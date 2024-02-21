@@ -14,7 +14,6 @@ Shader "Graph/PointSurfaceGPU"
         #pragma instancing_options assumeuniformscaling procedural:ConfigureProcedural
         #pragma editor_sync_compilation
         #pragma target 4.5
-
         struct Input {
             float3 worldPos;
         };
