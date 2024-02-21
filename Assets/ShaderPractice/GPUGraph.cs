@@ -84,7 +84,9 @@ public class GPUGraph : MonoBehaviour
         computeShader.SetBuffer(0, positionsId, positionsBuffer);
 
         var kernelIndex =
-            (int)function + (int)(transitioning ? transitionFunction : function) * 5;
+            (int)function +
+            (int)(transitioning ? transitionFunction : function) *
+            FunctionLibrary.FunctionCount;
         computeShader.SetBuffer(kernelIndex, positionsId, positionsBuffer);
 
         int groups = Mathf.CeilToInt(resolution / 8f);

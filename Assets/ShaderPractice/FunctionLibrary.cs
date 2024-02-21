@@ -6,14 +6,6 @@ public static class FunctionLibrary
     public delegate Vector3 Function(float u, float v, float t);
     public enum FunctionName { Wave, MultiWave, Ripple, Sphere , Torus }
     static Function[] functions = { Wave, MultiWave, Ripple, Sphere , Torus };
-    public static Function GetFunction(FunctionName name)
-    {
-        return functions[(int)name];
-    }
-    public static FunctionName GetNextFunctionName(FunctionName name)
-    {
-        return (int)name < functions.Length - 1 ? name + 1 : 0;
-    }
     public static FunctionName GetRandomFunctionName()
     {
         var choice = (FunctionName)Random.Range(0, functions.Length);
@@ -23,6 +15,14 @@ public static class FunctionLibrary
     {
         var choice = (FunctionName)Random.Range(1, functions.Length);
         return choice == name ? 0 : choice;
+    }
+    public static Function GetFunction(FunctionName name) => functions[(int)name];
+
+    public static FunctionName GetNextFunctionName(FunctionName name) =>
+        (int)name < functions.Length - 1 ? name + 1 : 0;
+    public static int FunctionCount
+    {
+        get => functions.Length;
     }
     public static Vector3 Wave(float u, float v, float t)
     {
