@@ -1,0 +1,59 @@
+#pragma kernel Forces
+
+int Amount;
+float gravity;
+struct Pixel {
+	float2 pos;
+	int somethingBelow;
+	int somethingLeft;
+	int somethingRight;
+};
+RWStructuredBuffer<Pixel> Positions;
+RWStructuredBuffer<float2> Result;
+uint Hash(uint s)
+{
+	s ^= 2747636419u;
+	s *= 2654435769u;
+	s ^= s >> 16;
+	s *= 2654435769u;
+	s ^= s >> 16;
+	s *= 2654435769u;
+	return s;
+}
+
+float Random(uint seed)
+{
+	return float(Hash(seed)) / 4294967295.0; // 2^32-1
+}
+
+[numthreads(64,1,1)]
+void Forces (uint3 id : SV_DispatchThreadID)
+{
+	float2 pos = Positions[id.x].pos;
+	float2 desiredNext = float2(pos.x, pos.y + gravity);
+	if (pos.y > 0 &&  Positions[id.x].somethingBelow == 0)
+	{
+		Result[id.x] = desiredNext;
+	}
+	float perturbationStep = 0;
+	if (pos.y > 0)
+	{
+		if (Positions[id.x].somethingBelow == 1)
+		{
+			perturbationStep = Random(id.x);
+		}
+	}
+	if (perturbationStep > 0.5)
+	{
+		float leftOrRight = 0;
+		leftOrRight = Random(id.x + 1);
+		if (leftOrRight < 0.5 && Positions[id.x].somethingLeft == 0)
+		{
+			Result[id.x] = float2(pos.x - 1, pos.y);
+		}
+		if(leftOrRight >= 0.5 && Positions[id.x].somethingRight == 0)
+		{
+			Result[id.x] = float2(pos.x + 1, pos.y);
+		}
+	}
+}
