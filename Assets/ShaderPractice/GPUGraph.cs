@@ -48,12 +48,21 @@ public class GPUGraph : MonoBehaviour
     void Update()
     {
         duration += Time.deltaTime;
-        if (duration >= functionDuration)
+        if (transitioning)
+        {
+            if (duration >= transitionDuration)
+            {
+                duration -= transitionDuration;
+                transitioning = false;
+            }
+        }
+        else if (duration >= functionDuration)
         {
             duration -= functionDuration;
-            function = FunctionLibrary.GetNextFunctionName(function);
+            transitioning = true;
+            transitionFunction = function;
+            PickNextFunction();
         }
-        //PickNextFunction();
         UpdateFunctionOnGPU();
     }
     void PickNextFunction()
@@ -74,7 +83,8 @@ public class GPUGraph : MonoBehaviour
         }
         computeShader.SetBuffer(0, positionsId, positionsBuffer);
 
-        var kernelIndex = (int)function;
+        var kernelIndex =
+            (int)function + (int)(transitioning ? transitionFunction : function) * 5;
         computeShader.SetBuffer(kernelIndex, positionsId, positionsBuffer);
 
         int groups = Mathf.CeilToInt(resolution / 8f);
