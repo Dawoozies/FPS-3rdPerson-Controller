@@ -303,7 +303,7 @@ Transform:
   m_GameObject: {fileID: 1057900873}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 50, y: 50, z: -10}
+  m_LocalPosition: {x: 0, y: 0, z: -10}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -318,31 +318,14 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1092420639}
-  - component: {fileID: 1092420638}
+  - component: {fileID: 1092420640}
   m_Layer: 0
-  m_Name: GameObject
+  m_Name: GameManager
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1092420638
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1092420637}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ecf1f1f5379c66744ad00a3dfd7f33ee, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  particlePrefab: {fileID: 2243878293522490581, guid: fbfd1f377ce899c4c87c398084b6020a, type: 3}
-  particleComputeShader: {fileID: 7200000, guid: f846433c9dce78c46906fcb1d9475639, type: 3}
-  particleCount: 1000
-  nextStep: 0
-  timeStep: 0.01
 --- !u!4 &1092420639
 Transform:
   m_ObjectHideFlags: 0
@@ -358,6 +341,24 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1092420640
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1092420637}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1f74aea4ee3371a43b5ca000389d1c11, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  simulation: {fileID: 7200000, guid: f846433c9dce78c46906fcb1d9475639, type: 3}
+  mainCamera: {fileID: 1057900875}
+  quadPrefab: {fileID: 1765270362488841464, guid: 9c8e5709c5bf91149b12e03d900815e9, type: 3}
+  materialOriginal: {fileID: 2100000, guid: d64ca44d11e57294fa13aaf160198025, type: 2}
+  brushSize: 0
+  drawMaterial: 0
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

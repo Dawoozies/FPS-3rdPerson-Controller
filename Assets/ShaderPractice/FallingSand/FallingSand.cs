@@ -1,0 +1,108 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class FallingSand : MonoBehaviour
+{
+    public ComputeShader simulation;
+    public Camera mainCamera;
+    public GameObject quadPrefab;
+    public Material materialOriginal;
+    public class ScreenQuad
+    {
+        public Transform transform;
+        public MeshRenderer renderer;
+        public Material material;
+        public ScreenQuad(GameObject prefab, Material sourceMaterial)
+        {
+            GameObject clone = Instantiate(prefab);
+            transform = clone.transform;
+            renderer = clone.GetComponent<MeshRenderer>();
+            material = new Material(sourceMaterial);
+            renderer.material = material;
+        }
+        public void SetTexture(RenderTexture renderTexture)
+        {
+            renderer.material.mainTexture = renderTexture;
+        }
+        public void SetDimensions(float width, float height)
+        {
+            transform.localScale = new Vector3(width, height, 1);
+        }
+    }
+    ScreenQuad screenQuad;
+    float screenQuadWidth, screenQuadHeight;
+    public class DataTexture
+    {
+        public TextureType type;
+        public RenderTexture texture;
+        public DataTexture(TextureType type, int width, int height)
+        {
+            this.type = type;
+            if (type == TextureType.Result)
+                texture = new RenderTexture(width, height, 32, RenderTextureFormat.ARGBFloat);
+            else
+                texture = new RenderTexture(width, height, 32, RenderTextureFormat.ARGBInt);
+            texture.enableRandomWrite = true;
+            texture.filterMode = FilterMode.Point;
+            texture.Create();
+        }
+    }
+    public enum TextureType
+    {
+        Draw,
+        MaterialInput,
+        MaterialOutput,
+        Result,
+    }
+    List<DataTexture> dataTextures = new();
+    int resolutionX;
+    int resolutionY;
+    int DrawMaterialsKernel;
+    int DrawingResultKernel;
+
+    [Range(0, 20)]
+    public float brushSize;
+    [Range(0,10)]
+    public int drawMaterial;
+    private void Awake()
+    {
+        screenQuad = new ScreenQuad(quadPrefab, materialOriginal);
+        Vector2 screenCornerA = new Vector2(0, 0);
+        Vector2 screenCornerB = new Vector2(mainCamera.pixelWidth, mainCamera.pixelHeight);
+        Vector2 cornerA = mainCamera.ScreenToWorldPoint(screenCornerA);
+        Vector2 cornerB = mainCamera.ScreenToWorldPoint(screenCornerB);
+        screenQuadWidth = Mathf.Abs(cornerA.x - cornerB.x);
+        screenQuadHeight = Mathf.Abs(cornerA.y - cornerB.y);
+        screenQuad.SetDimensions(screenQuadWidth, screenQuadHeight);
+    }
+    private void Start()
+    {
+        uint threadGroupSizeX;
+        uint threadGroupSizeY;
+        DrawMaterialsKernel = simulation.FindKernel("DrawMaterials");
+        DrawingResultKernel = simulation.FindKernel("DrawingResult");
+        simulation.GetKernelThreadGroupSizes(DrawMaterialsKernel, out threadGroupSizeX, out threadGroupSizeY, out _);
+        resolutionX = Mathf.CeilToInt(mainCamera.pixelWidth / threadGroupSizeX) * 2;
+        resolutionY = Mathf.CeilToInt(mainCamera.pixelHeight / threadGroupSizeY) * 2;
+
+        DataTexture drawTexture = new DataTexture(TextureType.Draw, resolutionX, resolutionY);
+        dataTextures.Add(drawTexture);
+
+        DataTexture resultTexture = new DataTexture(TextureType.Result, resolutionX, resolutionY);
+        dataTextures.Add(resultTexture);
+    }
+    private void Update()
+    {
+        simulation.SetVector("mousePos", Input.mousePosition/4);
+        simulation.SetFloat("brushSize", brushSize);
+        simulation.SetInt("drawMaterialType", drawMaterial);
+        simulation.SetTexture(DrawMaterialsKernel, "DrawMaterialsOutput", dataTextures[0].texture);
+        simulation.Dispatch(DrawMaterialsKernel, resolutionX, resolutionY, 1);
+
+        simulation.SetTexture(DrawingResultKernel, "CellMaterialsInput", dataTextures[0].texture);
+        simulation.SetTexture(DrawingResultKernel, "Result", dataTextures[1].texture);
+        simulation.Dispatch(DrawingResultKernel, resolutionX, resolutionY, 1);
+        screenQuad.SetTexture(dataTextures[1].texture);
+    }
+}

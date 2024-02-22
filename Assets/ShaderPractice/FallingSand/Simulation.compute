@@ -1,0 +1,38 @@
+#pragma kernel ResetSimulation
+#pragma kernel DrawMaterials
+#pragma kernel DrawingResult
+//Simulation Textures
+RWTexture2D<float4> Result;
+RWTexture2D<int4> CellMaterialsInput;
+RWTexture2D<int4> CellMaterialsOutput;
+RWTexture2D<int4> DrawMaterialsOutput;
+
+float width;
+float height;
+float brushSize;
+float4 mousePos;
+int drawMaterialType;
+[numthreads(8,8,1)]
+void ResetSimulation(uint3 id : SV_DispatchThreadID)
+{
+    CellMaterialsInput[id.xy] = int4(0, 0, 0, 0);
+    CellMaterialsOutput[id.xy] = int4(0, 0, 0, 0);
+    DrawMaterialsOutput[id.xy] = int4(0, 0, 0, 0);
+    Result[id.xy] = float4(0, 0, 0, 0);
+}
+[numthreads(8,8,1)]
+void DrawMaterials(uint3 id : SV_DispatchThreadID)
+{
+    if (length(id.xy - mousePos.xy) < brushSize)
+    {
+        DrawMaterialsOutput[id.xy] = int4(drawMaterialType,0,0,0);
+    }
+}
+[numthreads(8,8,1)]
+void DrawingResult(uint3 id : SV_DispatchThreadID)
+{
+    if (CellMaterialsInput[id.xy].r == 0)
+        Result[id.xy] = float4(0, 0, 0, 0);
+    if (CellMaterialsInput[id.xy].r == 1)
+        Result[id.xy] = float4(1, 0, 0, 1);
+}

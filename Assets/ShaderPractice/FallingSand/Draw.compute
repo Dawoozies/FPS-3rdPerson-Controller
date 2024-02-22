@@ -1,0 +1,56 @@
+#pragma kernel Draw
+#include "Element.compute"
+
+float4 mousePosition;
+bool mouseDown;
+float brushSize;
+RWTexture2D<int4> 
+int elementToPaint;
+Element GetElementAtPosition(uint2 id)
+{
+    return elements[GetElementsIndex(id)];
+}
+[numthreads(8,8,1)]
+void Draw (uint3 id : SV_DispatchThreadID)
+{
+    if (!mouseDown)
+        return;
+    if (elementToPaint == 0)
+        return;
+    float2 pixelPos = id.xy;
+    float2 mousePos = mousePosition.xy;
+    if (length(pixelPos - mousePos) < brushSize)
+    {
+        Element elementAlreadyHere = GetElementAtPosition(id.xy);
+        if (elementAlreadyHere.elementID != 0)
+            return;
+        Element newElement;
+        newElement.elementID = elementToPaint;
+        newElement.elementType = 2;
+        newElement.gravity = 0;
+        newElement.velocity = float2(0, 0);
+        if (newElement.elementID == 1)
+        {
+            textureToDrawOn[id.xy] = float4(1,1,0,1);
+            newElement.gravity = -3;
+            newElement.elementType = 0;
+        }
+        if (newElement.elementID == 2)
+        {
+            textureToDrawOn[id.xy] = float4(0.45, 0.8, 0.96, 1);
+            newElement.gravity = -5;
+            newElement.elementType = 1;
+        }
+        if (newElement.elementID == 3)
+        {
+            textureToDrawOn[id.xy] = float4(0.78,0.84, 0.88, 1);
+            newElement.gravity = 2;
+            newElement.elementType = 2;
+        }
+        uint elementIndex = GetElementsIndex(id.xy);
+        elements[elementIndex].elementID = newElement.elementID;
+        elements[elementIndex].elementType = newElement.elementType;
+        elements[elementIndex].gravity = newElement.gravity;
+        elements[elementIndex].velocity = newElement.velocity;
+    }
+}
