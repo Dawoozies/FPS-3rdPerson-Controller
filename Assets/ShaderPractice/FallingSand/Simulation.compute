@@ -1,8 +1,11 @@
 #pragma kernel ResetSimulation
 #pragma kernel DrawMaterials
-#pragma kernel DrawingResult
+#pragma kernel MergeDrawAndInput
+#pragma kernel ResolveFallingOnly
+#pragma kernel DrawResults
+#pragma kernel ResetTextures
 //Simulation Textures
-RWTexture2D<float4> Result;
+RWTexture2D<float4> Results;
 RWTexture2D<int4> CellMaterialsInput;
 RWTexture2D<int4> CellMaterialsOutput;
 RWTexture2D<int4> DrawMaterialsOutput;
@@ -11,28 +14,123 @@ float width;
 float height;
 float brushSize;
 float4 mousePos;
+bool mouseDown;
 int drawMaterialType;
+const float4 air = float4(0, 0, 0, 0);
+const float4 sand = float4(1, 1, 0, 1);
+const float4 water = float4(0.5, 0.5, 1, 1);
+const float4 fire = float4(1, 0.65, 0, 1);
+
 [numthreads(8,8,1)]
 void ResetSimulation(uint3 id : SV_DispatchThreadID)
 {
     CellMaterialsInput[id.xy] = int4(0, 0, 0, 0);
     CellMaterialsOutput[id.xy] = int4(0, 0, 0, 0);
     DrawMaterialsOutput[id.xy] = int4(0, 0, 0, 0);
-    Result[id.xy] = float4(0, 0, 0, 0);
+    Results[id.xy] = float4(0, 0, 0, 0);
 }
 [numthreads(8,8,1)]
 void DrawMaterials(uint3 id : SV_DispatchThreadID)
 {
-    if (length(id.xy - mousePos.xy) < brushSize)
+    if (!mouseDown)
+        return;
+    
+    float2 pixelPos = id.xy;
+    float2 pos = mousePos.xy;
+    if (length(pixelPos - pos) < brushSize)
     {
-        DrawMaterialsOutput[id.xy] = int4(drawMaterialType,0,0,0);
+        DrawMaterialsOutput[id.xy] = int4(drawMaterialType, 0, 0, 0);
     }
 }
 [numthreads(8,8,1)]
-void DrawingResult(uint3 id : SV_DispatchThreadID)
+void MergeDrawAndInput(uint3 id : SV_DispatchThreadID)
 {
-    if (CellMaterialsInput[id.xy].r == 0)
-        Result[id.xy] = float4(0, 0, 0, 0);
-    if (CellMaterialsInput[id.xy].r == 1)
-        Result[id.xy] = float4(1, 0, 0, 1);
+    int4 drawData = DrawMaterialsOutput[id.xy];
+    int4 inputData = CellMaterialsInput[id.xy];
+    if (inputData.r == 0)
+        CellMaterialsInput[id.xy] = drawData;
 }
+[numthreads(8,8,1)]
+void ResolveFallingOnly(uint3 id : SV_DispatchThreadID)
+{
+    int material = CellMaterialsInput[id.xy].r;
+    int materialBelow = CellMaterialsInput[id.xy - uint2(0, 1)].r;
+    int materialAbove = CellMaterialsInput[id.xy + uint2(0, 1)].r;
+    if(material == 0)
+    {
+        if (materialAbove == 1 || materialAbove == 2)
+        {
+            CellMaterialsOutput[id.xy] = int4(materialAbove,0,0,0);
+            CellMaterialsOutput[id.xy + uint2(0, 1)] = int4(material, 0, 0, 0);
+            return;
+        }
+        if (materialBelow == 3)
+        {
+            CellMaterialsOutput[id.xy] = int4(materialBelow, 0, 0, 0);
+            CellMaterialsOutput[id.xy - uint2(0, 1)] = int4(material, 0, 0, 0);
+            return;
+        }
+    }
+    if (material == 1)
+    {
+        if (materialBelow == 0)
+        {
+            CellMaterialsOutput[id.xy] = int4(materialBelow, 0, 0, 0);
+            CellMaterialsOutput[id.xy - uint2(0, 1)] = int4(material, 0, 0, 0);
+            return;
+        }
+    }
+    if (material == 2)
+    {
+        if (materialBelow == 0)
+        {
+            CellMaterialsOutput[id.xy] = int4(materialBelow, 0, 0, 0);
+            CellMaterialsOutput[id.xy - uint2(0, 1)] = int4(material, 0, 0, 0);
+            return;
+        }
+    }
+    if (material == 3)
+    {
+        if (materialAbove == 0)
+        {
+            CellMaterialsOutput[id.xy] = int4(materialAbove, 0, 0, 0);
+            CellMaterialsOutput[id.xy + uint2(0, 1)] = int4(material, 0, 0, 0);
+            return;
+        }
+    }
+    CellMaterialsOutput[id.xy] = CellMaterialsInput[id.xy];
+}
+[numthreads(8,8,1)]
+void DrawResults(uint3 id : SV_DispatchThreadID)
+{
+    int material = CellMaterialsOutput[id.xy].r;
+    if (material == 0)
+    {
+        Results[id.xy] = float4(0, 0, 0, 0);
+    }
+    if (material == 1)
+    {
+        Results[id.xy] = float4(1, 1, 0, 1);
+    }
+    if (material == 2)
+    {
+        Results[id.xy] = float4(0.5, 0.5, 1, 1);
+    }
+    if (material == 3)
+    {
+        Results[id.xy] = float4(1, 0.65, 0, 1);
+    }
+}
+[numthreads(8,8,1)]
+void ResetTextures(uint3 id : SV_DispatchThreadID)
+{
+    int4 outputData = CellMaterialsOutput[id.xy];
+    CellMaterialsInput[id.xy] = outputData;
+    CellMaterialsOutput[id.xy] = int4(0, 0, 0, 0);
+    DrawMaterialsOutput[id.xy] = int4(0, 0, 0, 0);
+
+}
+//0 = Air
+//1 = Sand
+//2 = Water
+//3 = fire

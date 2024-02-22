@@ -59,7 +59,10 @@ public class FallingSand : MonoBehaviour
     int resolutionX;
     int resolutionY;
     int DrawMaterialsKernel;
-    int DrawingResultKernel;
+    int MergeDrawAndInputKernel;
+    int ResolveFallingOnlyKernel;
+    int DrawResultsKernel;
+    int ResetTexturesKernel;
 
     [Range(0, 20)]
     public float brushSize;
@@ -81,7 +84,10 @@ public class FallingSand : MonoBehaviour
         uint threadGroupSizeX;
         uint threadGroupSizeY;
         DrawMaterialsKernel = simulation.FindKernel("DrawMaterials");
-        DrawingResultKernel = simulation.FindKernel("DrawingResult");
+        MergeDrawAndInputKernel = simulation.FindKernel("MergeDrawAndInput");
+        ResolveFallingOnlyKernel = simulation.FindKernel("ResolveFallingOnly");
+        DrawResultsKernel = simulation.FindKernel("DrawResults");
+        ResetTexturesKernel = simulation.FindKernel("ResetTextures");
         simulation.GetKernelThreadGroupSizes(DrawMaterialsKernel, out threadGroupSizeX, out threadGroupSizeY, out _);
         resolutionX = Mathf.CeilToInt(mainCamera.pixelWidth / threadGroupSizeX) * 2;
         resolutionY = Mathf.CeilToInt(mainCamera.pixelHeight / threadGroupSizeY) * 2;
@@ -89,20 +95,40 @@ public class FallingSand : MonoBehaviour
         DataTexture drawTexture = new DataTexture(TextureType.Draw, resolutionX, resolutionY);
         dataTextures.Add(drawTexture);
 
+        DataTexture cellMaterialsInputTexture = new DataTexture(TextureType.MaterialInput, resolutionX, resolutionY);
+        dataTextures.Add(cellMaterialsInputTexture);
+
+        DataTexture cellMaterialsOutputTexture = new DataTexture(TextureType.MaterialOutput, resolutionX, resolutionY);
+        dataTextures.Add(cellMaterialsOutputTexture);
+
         DataTexture resultTexture = new DataTexture(TextureType.Result, resolutionX, resolutionY);
         dataTextures.Add(resultTexture);
     }
     private void Update()
     {
         simulation.SetVector("mousePos", Input.mousePosition/4);
+        simulation.SetBool("mouseDown", Input.GetMouseButton(0));
         simulation.SetFloat("brushSize", brushSize);
         simulation.SetInt("drawMaterialType", drawMaterial);
-        simulation.SetTexture(DrawMaterialsKernel, "DrawMaterialsOutput", dataTextures[0].texture);
+        simulation.SetTexture(DrawMaterialsKernel, "DrawMaterialsOutput", dataTextures[1].texture);
         simulation.Dispatch(DrawMaterialsKernel, resolutionX, resolutionY, 1);
 
-        simulation.SetTexture(DrawingResultKernel, "CellMaterialsInput", dataTextures[0].texture);
-        simulation.SetTexture(DrawingResultKernel, "Result", dataTextures[1].texture);
-        simulation.Dispatch(DrawingResultKernel, resolutionX, resolutionY, 1);
-        screenQuad.SetTexture(dataTextures[1].texture);
+        //simulation.SetTexture(MergeDrawAndInputKernel, "DrawMaterialsOutput", dataTextures[0].texture);
+        //simulation.SetTexture(MergeDrawAndInputKernel, "CellMaterialsInput", dataTextures[1].texture);
+        //simulation.Dispatch(MergeDrawAndInputKernel, resolutionX, resolutionY, 1);
+
+        simulation.SetTexture(ResolveFallingOnlyKernel, "CellMaterialsInput", dataTextures[1].texture);
+        simulation.SetTexture(ResolveFallingOnlyKernel, "CellMaterialsOutput", dataTextures[2].texture);
+        simulation.Dispatch(ResolveFallingOnlyKernel, resolutionX, resolutionY, 1);
+
+        simulation.SetTexture(DrawResultsKernel, "CellMaterialsOutput", dataTextures[2].texture);
+        simulation.SetTexture(DrawResultsKernel, "Results", dataTextures[3].texture);
+        simulation.Dispatch(DrawResultsKernel, resolutionX, resolutionY, 1);
+        screenQuad.SetTexture(dataTextures[3].texture);
+
+        simulation.SetTexture(ResetTexturesKernel, "DrawMaterialsOutput", dataTextures[0].texture);
+        simulation.SetTexture(ResetTexturesKernel, "CellMaterialsInput", dataTextures[1].texture);
+        simulation.SetTexture(ResetTexturesKernel, "CellMaterialsOutput", dataTextures[2].texture);
+        simulation.Dispatch(ResetTexturesKernel, resolutionX, resolutionY, 1);
     }
 }

@@ -357,8 +357,8 @@ MonoBehaviour:
   mainCamera: {fileID: 1057900875}
   quadPrefab: {fileID: 1765270362488841464, guid: 9c8e5709c5bf91149b12e03d900815e9, type: 3}
   materialOriginal: {fileID: 2100000, guid: d64ca44d11e57294fa13aaf160198025, type: 2}
-  brushSize: 0
-  drawMaterial: 0
+  brushSize: 20
+  drawMaterial: 1
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
