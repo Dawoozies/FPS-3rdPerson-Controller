@@ -45,6 +45,7 @@ public class FallingSand : MonoBehaviour
                 texture = new RenderTexture(width, height, 32, RenderTextureFormat.ARGBInt);
             texture.enableRandomWrite = true;
             texture.filterMode = FilterMode.Point;
+            texture.wrapMode = TextureWrapMode.Clamp;
             texture.Create();
         }
     }
@@ -106,6 +107,9 @@ public class FallingSand : MonoBehaviour
     }
     private void Update()
     {
+        simulation.SetFloat("width", dataTextures[1].texture.width / 8);
+        simulation.SetFloat("height", dataTextures[1].texture.height / 8);
+
         simulation.SetVector("mousePos", Input.mousePosition/4);
         simulation.SetBool("mouseDown", Input.GetMouseButton(0));
         simulation.SetFloat("brushSize", brushSize);
