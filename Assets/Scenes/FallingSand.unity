@@ -359,6 +359,7 @@ MonoBehaviour:
   materialOriginal: {fileID: 2100000, guid: d64ca44d11e57294fa13aaf160198025, type: 2}
   brushSize: 20
   drawMaterial: 1
+  timeStep: 0.005
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

@@ -65,39 +65,36 @@ void ResolveFallingOnly(uint3 id : SV_DispatchThreadID)
     int materialRight = CellMaterialsInput[rightPos].r;
     
     float boundH = height * 8;
-    
+
     if (material == 0)
     {
-        CellMaterialsOutput[id.xy] = int4(0, 0, 0, 0);
-        return;
+        //Air -> Sand
+        if (materialAbove == 1 && pixelPos.y > 0)
+        {
+            CellMaterialsOutput[id.xy] = CellMaterialsInput[abovePos];
+            CellMaterialsOutput[abovePos] = CellMaterialsInput[id.xy];
+            return;
+        }
+        if (materialAbove == 2 && pixelPos.y > 0)
+        {
+            CellMaterialsOutput[id.xy] = CellMaterialsInput[abovePos];
+            CellMaterialsOutput[abovePos] = CellMaterialsInput[id.xy];
+            return;
+        }
+        //Air -> Fire
+        if (materialBelow == 3 && pixelPos.y < boundH)
+        {
+            CellMaterialsOutput[id.xy] = CellMaterialsInput[belowPos];
+            CellMaterialsOutput[belowPos] = CellMaterialsInput[id.xy];
+            return;
+        }
     }
-    //if (material == 0)
-    //{
-    //    if ((materialAbove == 1 || materialAbove == 2))
-    //    {
-    //        CellMaterialsOutput[id.xy] = int4(materialAbove, 0, 0, 0);
-    //        CellMaterialsOutput[id.xy + uint2(0, 1)] = int4(material, 0, 0, 0);
-    //        return;
-    //    }
-    //    if (materialBelow == 3)
-    //    {
-    //        CellMaterialsOutput[id.xy] = int4(materialBelow, 0, 0, 0);
-    //        CellMaterialsOutput[id.xy - uint2(0, 1)] = int4(material, 0, 0, 0);
-    //        return;
-    //    }
-    //    if (materialLeft == 3 )
-    //    {
-    //        CellMaterialsOutput[id.xy] = int4(materialLeft, 0, 0, 0);
-    //        CellMaterialsOutput[leftPos] = int4(material, 0, 0, 0);
-    //        return;
-    //    }
-    //}
     if (material == 1)
     {
         if (materialBelow == 0 && belowPos.y > 0)
         {
-            CellMaterialsOutput[id.xy] = int4(materialBelow, 0, 0, 0);
-            CellMaterialsOutput[id.xy - uint2(0, 1)] = int4(material, 0, 0, 0);
+            CellMaterialsOutput[id.xy] = CellMaterialsInput[belowPos];
+            CellMaterialsOutput[belowPos] = CellMaterialsInput[id.xy];
             return;
         }
     }
@@ -105,16 +102,16 @@ void ResolveFallingOnly(uint3 id : SV_DispatchThreadID)
     {
         if (materialBelow == 0 && belowPos.y > 0)
         {
-            CellMaterialsOutput[id.xy] = int4(materialBelow, 0, 0, 0);
-            CellMaterialsOutput[id.xy - uint2(0, 1)] = int4(material, 0, 0, 0);
+            CellMaterialsOutput[id.xy] = CellMaterialsInput[belowPos];
+            CellMaterialsOutput[belowPos] = CellMaterialsInput[id.xy];
             return;
         }
     }
     if (material == 3)
     {
-        if (materialAbove == 0 && pixelPos.y < boundH)
+        if (materialAbove == 0 && abovePos.y < boundH)
         {
-            CellMaterialsOutput[id.xy] = CellMaterialsInput[belowPos];
+            CellMaterialsOutput[id.xy] = CellMaterialsInput[abovePos];
             CellMaterialsOutput[abovePos] = CellMaterialsInput[id.xy];
             return;
         }

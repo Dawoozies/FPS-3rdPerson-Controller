@@ -69,6 +69,8 @@ public class FallingSand : MonoBehaviour
     public float brushSize;
     [Range(0,10)]
     public int drawMaterial;
+    public float timeStep;
+    float timer;
     private void Awake()
     {
         screenQuad = new ScreenQuad(quadPrefab, materialOriginal);
@@ -107,6 +109,12 @@ public class FallingSand : MonoBehaviour
     }
     private void Update()
     {
+        if(timer < timeStep)
+        {
+            timer += Time.deltaTime;
+            return;
+        }
+        timer = 0;
         simulation.SetFloat("width", dataTextures[1].texture.width / 8);
         simulation.SetFloat("height", dataTextures[1].texture.height / 8);
 
