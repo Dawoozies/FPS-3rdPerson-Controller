@@ -62,6 +62,8 @@ public class FallingSand : MonoBehaviour
     int DrawMaterialsKernel;
     int MergeDrawAndInputKernel;
     int ResolveFallingOnlyKernel;
+    int ResolveDiagonalOnlyKernel;
+    int ResolveFlowOnlyKernel;
     int DrawResultsKernel;
     int ResetTexturesKernel;
 
@@ -89,6 +91,8 @@ public class FallingSand : MonoBehaviour
         DrawMaterialsKernel = simulation.FindKernel("DrawMaterials");
         MergeDrawAndInputKernel = simulation.FindKernel("MergeDrawAndInput");
         ResolveFallingOnlyKernel = simulation.FindKernel("ResolveFallingOnly");
+        ResolveDiagonalOnlyKernel = simulation.FindKernel("ResolveDiagonalOnly");
+        ResolveFlowOnlyKernel = simulation.FindKernel("ResolveFlowOnly");
         DrawResultsKernel = simulation.FindKernel("DrawResults");
         ResetTexturesKernel = simulation.FindKernel("ResetTextures");
         simulation.GetKernelThreadGroupSizes(DrawMaterialsKernel, out threadGroupSizeX, out threadGroupSizeY, out _);
@@ -115,6 +119,7 @@ public class FallingSand : MonoBehaviour
             return;
         }
         timer = 0;
+        simulation.SetFloat("diagRNG", Random.Range(0f, 1f));
         simulation.SetFloat("width", dataTextures[1].texture.width / 8);
         simulation.SetFloat("height", dataTextures[1].texture.height / 8);
 
@@ -132,6 +137,14 @@ public class FallingSand : MonoBehaviour
         simulation.SetTexture(ResolveFallingOnlyKernel, "CellMaterialsInput", dataTextures[1].texture);
         simulation.SetTexture(ResolveFallingOnlyKernel, "CellMaterialsOutput", dataTextures[2].texture);
         simulation.Dispatch(ResolveFallingOnlyKernel, resolutionX, resolutionY, 1);
+
+        simulation.SetTexture(ResolveDiagonalOnlyKernel, "CellMaterialsInput", dataTextures[2].texture);
+        simulation.SetTexture(ResolveDiagonalOnlyKernel, "CellMaterialsOutput", dataTextures[1].texture);
+        simulation.Dispatch(ResolveDiagonalOnlyKernel, resolutionX, resolutionY, 1);
+
+        simulation.SetTexture(ResolveFlowOnlyKernel, "CellMaterialsInput", dataTextures[1].texture);
+        simulation.SetTexture(ResolveFlowOnlyKernel, "CellMaterialsOutput", dataTextures[2].texture);
+        simulation.Dispatch(ResolveFlowOnlyKernel, resolutionX, resolutionY, 1);
 
         simulation.SetTexture(DrawResultsKernel, "CellMaterialsOutput", dataTextures[2].texture);
         simulation.SetTexture(DrawResultsKernel, "Results", dataTextures[3].texture);

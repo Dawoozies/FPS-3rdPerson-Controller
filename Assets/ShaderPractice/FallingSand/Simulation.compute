@@ -2,6 +2,8 @@
 #pragma kernel DrawMaterials
 #pragma kernel MergeDrawAndInput
 #pragma kernel ResolveFallingOnly
+#pragma kernel ResolveDiagonalOnly
+#pragma kernel ResolveFlowOnly
 #pragma kernel DrawResults
 #pragma kernel ResetTextures
 //Simulation Textures
@@ -20,6 +22,8 @@ const float4 air = float4(0, 0, 0, 0);
 const float4 sand = float4(1, 1, 0, 1);
 const float4 water = float4(0.5, 0.5, 1, 1);
 const float4 fire = float4(1, 0.65, 0, 1);
+
+float diagRNG;
 
 [numthreads(8,8,1)]
 void ResetSimulation(uint3 id : SV_DispatchThreadID)
@@ -56,13 +60,9 @@ void ResolveFallingOnly(uint3 id : SV_DispatchThreadID)
     float2 pixelPos = id.xy;
     uint2 belowPos = id.xy - uint2(0, 1);
     uint2 abovePos = id.xy + uint2(0, 1);
-    uint2 leftPos = id.xy - uint2(1, 0);
-    uint2 rightPos = id.xy + uint2(1, 0);
     int material = CellMaterialsInput[id.xy].r;
     int materialBelow = CellMaterialsInput[belowPos].r;
     int materialAbove = CellMaterialsInput[abovePos].r;
-    int materialLeft = CellMaterialsInput[leftPos].r;
-    int materialRight = CellMaterialsInput[rightPos].r;
     
     float boundH = height * 8;
 
@@ -75,6 +75,7 @@ void ResolveFallingOnly(uint3 id : SV_DispatchThreadID)
             CellMaterialsOutput[abovePos] = CellMaterialsInput[id.xy];
             return;
         }
+        //Air -> Water
         if (materialAbove == 2 && pixelPos.y > 0)
         {
             CellMaterialsOutput[id.xy] = CellMaterialsInput[abovePos];
@@ -97,6 +98,12 @@ void ResolveFallingOnly(uint3 id : SV_DispatchThreadID)
             CellMaterialsOutput[belowPos] = CellMaterialsInput[id.xy];
             return;
         }
+        if (materialBelow == 2 && belowPos.y > 0)
+        {
+            CellMaterialsOutput[id.xy] = CellMaterialsInput[belowPos];
+            CellMaterialsOutput[belowPos] = CellMaterialsInput[id.xy];
+            return;
+        }
     }
     if (material == 2)
     {
@@ -104,6 +111,12 @@ void ResolveFallingOnly(uint3 id : SV_DispatchThreadID)
         {
             CellMaterialsOutput[id.xy] = CellMaterialsInput[belowPos];
             CellMaterialsOutput[belowPos] = CellMaterialsInput[id.xy];
+            return;
+        }
+        if (materialAbove == 1 && pixelPos.y > 0)
+        {
+            CellMaterialsOutput[id.xy] = CellMaterialsInput[abovePos];
+            CellMaterialsOutput[abovePos] = CellMaterialsInput[id.xy];
             return;
         }
     }
@@ -116,6 +129,87 @@ void ResolveFallingOnly(uint3 id : SV_DispatchThreadID)
             return;
         }
     }
+    CellMaterialsOutput[id.xy] = CellMaterialsInput[id.xy];
+}
+[numthreads(8,8,1)]
+void ResolveDiagonalOnly(uint3 id : SV_DispatchThreadID)
+{
+    float2 pixelPos = id.xy;
+    uint2 D = id.xy - uint2(0, 1);
+    uint2 L = id.xy - uint2(1, 0);
+    uint2 R = id.xy + uint2(1, 0);
+    uint2 DL = id.xy - uint2(0, 1) - uint2(1, 0);
+    uint2 DR = id.xy - uint2(0, 1) + uint2(1, 0);
+    uint2 UL = id.xy + uint2(0, 1) - uint2(1, 0);
+    uint2 UR = id.xy + uint2(0, 1) + uint2(1, 0);
+    int m = CellMaterialsInput[id.xy].r;
+    int mD = CellMaterialsInput[D].r;
+    int mL = CellMaterialsInput[L].r;
+    int mR = CellMaterialsInput[R].r;
+    int mDL = CellMaterialsInput[DL].r;
+    int mDR = CellMaterialsInput[DR].r;
+    int mUL = CellMaterialsInput[UL].r;
+    int mUR = CellMaterialsInput[UR].r;
+    
+    if (m == 0)
+    {
+        if(diagRNG < 0.5)
+        {
+            if (mUR == 1)
+            {
+                if (mR == 1)
+                {
+                    CellMaterialsOutput[UR] = CellMaterialsInput[id.xy];
+                    CellMaterialsOutput[id.xy] = CellMaterialsInput[UR];
+                    return;
+                }
+            }
+        }
+        if (diagRNG >= 0.5)
+        {
+            if (mUL == 1)
+            {
+                if (mL == 1)
+                {
+                    CellMaterialsOutput[UL] = CellMaterialsInput[id.xy];
+                    CellMaterialsOutput[id.xy] = CellMaterialsInput[UL];
+                    return;
+                }
+            }
+        }
+    }
+    if (m == 1)
+    {
+        if(diagRNG < 0.5)
+        {
+            if (mD == 1)
+            {
+                if (mDL == 0)
+                {
+                    CellMaterialsOutput[DL] = CellMaterialsInput[id.xy];
+                    CellMaterialsOutput[id.xy] = CellMaterialsInput[DL];
+                    return;
+                }
+            }
+        }
+        if (diagRNG >= 0.5)
+        {
+            if (mD == 1)
+            {
+                if (mDR == 0)
+                {
+                    CellMaterialsOutput[DR] = CellMaterialsInput[id.xy];
+                    CellMaterialsOutput[id.xy] = CellMaterialsInput[DR];
+                    return;
+                }
+            }
+        }
+    }
+    CellMaterialsOutput[id.xy] = CellMaterialsInput[id.xy];
+}
+[numthreads(8,8,1)]
+void ResolveFlowOnly(uint3 id : SV_DispatchThreadID)
+{
     CellMaterialsOutput[id.xy] = CellMaterialsInput[id.xy];
 }
 [numthreads(8,8,1)]
@@ -146,7 +240,6 @@ void ResetTextures(uint3 id : SV_DispatchThreadID)
     CellMaterialsInput[id.xy] = outputData;
     CellMaterialsOutput[id.xy] = int4(0, 0, 0, 0);
     DrawMaterialsOutput[id.xy] = int4(0, 0, 0, 0);
-
 }
 //0 = Air
 //1 = Sand
