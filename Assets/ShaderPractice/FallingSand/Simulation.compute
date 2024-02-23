@@ -24,6 +24,7 @@ const float4 water = float4(0.5, 0.5, 1, 1);
 const float4 fire = float4(1, 0.65, 0, 1);
 
 float diagRNG;
+bool flow;
 
 [numthreads(8,8,1)]
 void ResetSimulation(uint3 id : SV_DispatchThreadID)
@@ -155,9 +156,9 @@ void ResolveDiagonalOnly(uint3 id : SV_DispatchThreadID)
     {
         if(diagRNG < 0.5)
         {
-            if (mUR == 1)
+            if (mUR == 1 || mUR == 2)
             {
-                if (mR == 1)
+                if (mR == 1 || mR == 2)
                 {
                     CellMaterialsOutput[UR] = CellMaterialsInput[id.xy];
                     CellMaterialsOutput[id.xy] = CellMaterialsInput[UR];
@@ -167,9 +168,9 @@ void ResolveDiagonalOnly(uint3 id : SV_DispatchThreadID)
         }
         if (diagRNG >= 0.5)
         {
-            if (mUL == 1)
+            if (mUL == 1 || mUL == 2)
             {
-                if (mL == 1)
+                if (mL == 1 || mL == 2)
                 {
                     CellMaterialsOutput[UL] = CellMaterialsInput[id.xy];
                     CellMaterialsOutput[id.xy] = CellMaterialsInput[UL];
@@ -205,11 +206,110 @@ void ResolveDiagonalOnly(uint3 id : SV_DispatchThreadID)
             }
         }
     }
+    if (m == 2)
+    {
+        if (diagRNG < 0.5)
+        {
+            if (mD == 1 || mD == 2)
+            {
+                if (mDL == 0)
+                {
+                    CellMaterialsOutput[DL] = CellMaterialsInput[id.xy];
+                    CellMaterialsOutput[id.xy] = CellMaterialsInput[DL];
+                    return;
+                }
+            }
+        }
+        if (diagRNG >= 0.5)
+        {
+            if (mD == 1 || mD == 2)
+            {
+                if (mDR == 0)
+                {
+                    CellMaterialsOutput[DR] = CellMaterialsInput[id.xy];
+                    CellMaterialsOutput[id.xy] = CellMaterialsInput[DR];
+                    return;
+                }
+            }
+        }
+    }
     CellMaterialsOutput[id.xy] = CellMaterialsInput[id.xy];
 }
 [numthreads(8,8,1)]
 void ResolveFlowOnly(uint3 id : SV_DispatchThreadID)
 {
+    if (!flow)
+    {
+        CellMaterialsOutput[id.xy] = CellMaterialsInput[id.xy];
+        return;
+    }
+    float2 pixelPos = id.xy;
+    uint2 D = id.xy - uint2(0, 1);
+    uint2 L = id.xy - uint2(1, 0);
+    uint2 R = id.xy + uint2(1, 0);
+    uint2 DL = id.xy - uint2(0, 1) - uint2(1, 0);
+    uint2 DR = id.xy - uint2(0, 1) + uint2(1, 0);
+    uint2 UL = id.xy + uint2(0, 1) - uint2(1, 0);
+    uint2 UR = id.xy + uint2(0, 1) + uint2(1, 0);
+    int m = CellMaterialsInput[id.xy].r;
+    int mD = CellMaterialsInput[D].r;
+    int mL = CellMaterialsInput[L].r;
+    int mR = CellMaterialsInput[R].r;
+    int mDL = CellMaterialsInput[DL].r;
+    int mDR = CellMaterialsInput[DR].r;
+    int mUL = CellMaterialsInput[UL].r;
+    int mUR = CellMaterialsInput[UR].r;
+    if(m == 0)
+    {
+        if (diagRNG < 0.5)
+        {
+            if (mDR == 2 || mDR == 1)
+            {
+                if (mR == 2)
+                {
+                    CellMaterialsOutput[R] = CellMaterialsInput[id.xy];
+                    CellMaterialsOutput[id.xy] = CellMaterialsInput[R];
+                    return;
+                }
+            }
+        }
+        if (diagRNG >= 0.5)
+        {
+            if (mDL == 2 || mDL == 1)
+            {
+                if (mL == 2)
+                {
+                    CellMaterialsOutput[L] = CellMaterialsInput[id.xy];
+                    CellMaterialsOutput[id.xy] = CellMaterialsInput[L];
+                    return;
+                }
+            }
+        }
+    }
+    if (m == 2)
+    {
+        if (mD == 2 || mD == 1)
+        {
+            if (diagRNG < 0.5)
+            {
+                if (mL == 0)
+                {
+                    CellMaterialsOutput[L] = CellMaterialsInput[id.xy];
+                    CellMaterialsOutput[id.xy] = CellMaterialsInput[L];
+                    return;
+                }
+            }
+            if (diagRNG >= 0.5)
+            {
+                if (mR == 0)
+                {
+                    CellMaterialsOutput[R] = CellMaterialsInput[id.xy];
+                    CellMaterialsOutput[id.xy] = CellMaterialsInput[R];
+                    return;
+                }
+            }
+        }
+    }
     CellMaterialsOutput[id.xy] = CellMaterialsInput[id.xy];
 }
 [numthreads(8,8,1)]
