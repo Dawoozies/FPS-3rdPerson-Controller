@@ -55,6 +55,11 @@ void MergeDrawAndInput(uint3 id : SV_DispatchThreadID)
     if (inputData.r == 0)
         CellMaterialsInput[id.xy] = drawData;
 }
+void SwapCells(uint2 cellA, uint2 cellB)
+{
+    CellMaterialsOutput[cellA] = CellMaterialsInput[cellB];
+    CellMaterialsOutput[cellB] = CellMaterialsInput[cellA];
+}
 [numthreads(8,8,1)]
 void ResolveFallingOnly(uint3 id : SV_DispatchThreadID)
 {
@@ -74,6 +79,7 @@ void ResolveFallingOnly(uint3 id : SV_DispatchThreadID)
         {
             CellMaterialsOutput[id.xy] = CellMaterialsInput[abovePos];
             CellMaterialsOutput[abovePos] = CellMaterialsInput[id.xy];
+            SwapCells(id.xy, abovePos);
             return;
         }
         //Air -> Water
